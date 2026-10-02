@@ -1,8 +1,4 @@
-"use server";
-
 import { prisma } from "@/lib/prisma";
-import { PropertyType, PropertyStatus } from "@/app/generated/prisma";
-import { revalidatePath } from "next/cache";
 
 export async function createProperty(formData: FormData) {
   const name = formData.get("name") as string;
