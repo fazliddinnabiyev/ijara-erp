@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { PropertyType, PropertyStatus } from "@/app/generated/prisma";
+import { PropertyType, PropertyStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 export async function createProperty(formData: FormData) {
