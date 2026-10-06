@@ -3,6 +3,8 @@ import { deleteProperty } from "./actions";
 import AddPropertyModal from "./add-property-modal";
 import StatusDot from "./status-dot";
 
+export const dynamic = "force-dynamic";
+
 const TYPE_LABELS: Record<string, string> = {
   UY: "Uy",
   OFIS: "Ofis",
