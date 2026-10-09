@@ -149,14 +149,12 @@ setShowForm(false);
 setNewName("");
 setNewAmount("");
 setNotice("Yozuv qo‘shildi. Bu demo ma’lumoti hozircha vaqtinchalik saqlanadi.");
-```
 
 }
 
 function exportCSV() {
 if (!config) return;
 
-```
 const csvRows = [config.headers, ...rows];
 const csv =
   "\uFEFF" +
@@ -177,7 +175,6 @@ link.href = url;
 link.download = `${page.toLowerCase().replace(/\s+/g, "-")}.csv`;
 link.click();
 URL.revokeObjectURL(url);
-```
 
 }
 
@@ -515,7 +512,6 @@ className={
     </section>
   </main>
 </div>
-```
 
 );
 }
