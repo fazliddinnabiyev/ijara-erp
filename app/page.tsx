@@ -214,11 +214,13 @@ KvartiraERP </div>
             setNotice("");
             setShowForm(false);
           }}
-          className={`mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${
-            page === name
-              ? "bg-blue-600 text-white"
-              : "text-slate-300 hover:bg-white/10"
-          }`}
+          
+className={
+  "mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition " +
+  (page === name
+    ? "bg-blue-600 text-white"
+    : "text-slate-300 hover:bg-white/10")
+}
         >
           <span className="text-lg">{icon}</span>
           {name}
