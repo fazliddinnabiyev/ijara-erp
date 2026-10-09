@@ -201,7 +201,7 @@ const statusClasses: Record<string, string> = {
 return ( <div className="min-h-screen bg-slate-100 text-slate-800 md:flex"> <aside className="flex w-full flex-col bg-[#111f38] p-4 text-white md:fixed md:inset-y-0 md:w-60"> <div className="mb-7 flex items-center gap-3 px-2 py-2 text-lg font-extrabold"> <span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600">K</span>
 KvartiraERP </div>
 
-```
+
     <p className="mb-3 px-3 text-xs tracking-widest text-slate-400">ASOSIY MENYU</p>
 
     <nav className="grid grid-cols-2 gap-1 md:block">
