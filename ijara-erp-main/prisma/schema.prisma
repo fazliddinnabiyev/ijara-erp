@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PropertyType {
+  UY
+  OFIS
+  AVTO
+}
+
+enum PropertyStatus {
+  BOSH
+  BAND
+  TAMIRLANMOQDA
+}
+
+model Property {
+  id              Int             @id @default(autoincrement())
+  name            String
+  type            PropertyType
+  status          PropertyStatus  @default(BOSH)
+  monthlyRate     Decimal         @db.Decimal(12, 2)
+  currentClientId Int?
+  currentClient   Client?         @relation("CurrentRental", fields: [currentClientId], references: [id])
+  payments        Payment[]
+  createdAt       DateTime        @default(now())
+}
+
+model Client {
+  id             Int        @id @default(autoincrement())
+  fullName       String
+  phone          String
+  passportSeries String?
+  passportNumber String?
+  payments       Payment[]
+  currentRentals Property[] @relation("CurrentRental")
+  createdAt      DateTime   @default(now())
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  clientId   Int
+  client     Client   @relation(fields: [clientId], references: [id])
+  amount     Decimal  @db.Decimal(12, 2)
+  paidAt     DateTime @default(now())
+  note       String?
+}
