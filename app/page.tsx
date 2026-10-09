@@ -117,7 +117,6 @@ setNotice("Iltimos, nom yoki F.I.O. kiriting.");
 return;
 }
 
-```
 let record: RecordRow;
 
 if (page === "Kvartiralar") {
