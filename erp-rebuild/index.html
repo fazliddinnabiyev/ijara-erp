@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KvartiraERP — Ijara boshqaruvi</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="KvartiraERP bosh sahifa">
+        <span class="brand-mark">K</span><span>KvartiraERP</span>
+      </a>
+      <div class="nav-label">ASOSIY MENYU</div>
+      <nav id="navigation" aria-label="Asosiy navigatsiya">
+        <button class="nav-item active" data-page="dashboard"><span>▦</span>Dashboard</button>
+        <button class="nav-item" data-page="apartments"><span>⌂</span>Kvartiralar</button>
+        <button class="nav-item" data-page="tenants"><span>♙</span>Ijarachilar</button>
+        <button class="nav-item" data-page="owners"><span>♧</span>Kvartira egalari</button>
+        <button class="nav-item" data-page="contracts"><span>▤</span>Ijara shartnomalari</button>
+        <button class="nav-item" data-page="payments"><span>↔</span>To‘lovlar</button>
+        <button class="nav-item" data-page="expenses"><span>▣</span>Xarajatlar</button>
+        <button class="nav-item" data-page="reports"><span>▥</span>Hisobotlar</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-page="settings"><span>⚙</span>Sozlamalar</button>
+        <div class="version">KvartiraERP <span>v1.0.0</span></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="crumb"><span class="muted">Boshqaruv</span><span class="crumb-slash">/</span><strong id="pageCrumb">Dashboard</strong></div>
+        <div class="top-actions">
+          <button class="icon-button" title="Bildirishnomalar" aria-label="Bildirishnomalar">♧<i></i></button>
+          <div class="profile-avatar">FN</div>
+          <div class="profile-text"><strong>Administrator</strong><small>Tizim boshqaruvchisi</small></div>
+          <button class="chevron" aria-label="Profil menyusi">⌄</button>
+        </div>
+      </header>
+
+      <section class="page-content">
+        <div class="page-heading">
+          <div><p class="eyebrow">IJARA BOSHQARUVI</p><h1 id="pageTitle">Dashboard</h1><p id="pageDescription">Biznesingizning bugungi holati va asosiy ko‘rsatkichlari.</p></div>
+          <div class="heading-actions"><button class="button button-light" id="exportBtn">⇩ Eksport</button><button class="button button-primary" id="primaryAction">＋ Yangi yozuv</button></div>
+        </div>
+        <div id="pageBody"></div>
+        <footer class="footer"><span>© 2026 KvartiraERP</span><span>Ijara biznesingiz — yagona tizimda</span></footer>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
