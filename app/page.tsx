@@ -1,517 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type RecordRow = string[];
-type PageConfig = { headers: string[]; rows: RecordRow[] };
-
-const menu = [
-["Dashboard", "▦"],
-["Kvartiralar", "⌂"],
-["Ijarachilar", "♙"],
-["Kvartira egalari", "♧"],
-["Ijara shartnomalari", "▤"],
-["To‘lovlar", "↔"],
-["Xarajatlar", "▣"],
-["Hisobotlar", "▥"],
-];
-
-const apartments: RecordRow[] = [
-["A-001", "Yunusobod, 12-uy", "2", "55 m²", "3500000", "Ijarada"],
-["A-002", "Chilonzor, 5-uy", "1", "40 m²", "2500000", "Bo‘sh"],
-["A-003", "Mirzo Ulug‘bek, 8-uy", "3", "75 m²", "4000000", "Ijarada"],
-["A-004", "Yakkasaroy, 15-uy", "2", "60 m²", "3000000", "Ta’mirda"],
-["A-005", "Sergeli, 3-uy", "1", "35 m²", "2300000", "Bo‘sh"],
-];
-
-const tenants: RecordRow[] = [
-["Abdulloh Karimov", "+998 90 123 45 67", "A-001", "SH-001", "Faol"],
-["Madina Toshpo‘latova", "+998 93 234 56 78", "A-003", "SH-002", "Faol"],
-["Shuhrat Xolmirzayev", "+998 99 345 67 89", "A-006", "SH-003", "Faol"],
-["Dilshod Nazarov", "+998 97 456 78 90", "A-008", "SH-004", "Faol"],
-];
-
-const owners: RecordRow[] = [
-["Rustamov Aziz", "+998 90 111 22 33", "3", "15000000", "Faol"],
-["Karimova Gulnora", "+998 91 222 33 44", "2", "9500000", "Faol"],
-["Saidov Bekzod", "+998 93 333 44 55", "2", "8800000", "Faol"],
-];
-
-const contracts: RecordRow[] = [
-["SH-001", "Abdulloh Karimov", "A-001", "01.09.2026", "31.08.2027", "Faol"],
-["SH-002", "Madina Toshpo‘latova", "A-003", "15.08.2026", "14.08.2027", "Faol"],
-["SH-003", "Shuhrat Xolmirzayev", "A-006", "01.09.2026", "31.08.2027", "Faol"],
-];
-
-const payments: RecordRow[] = [
-["Abdulloh Karimov", "A-001", "3500000", "08.10.2026", "To‘langan"],
-["Madina Toshpo‘latova", "A-003", "4000000", "07.10.2026", "To‘langan"],
-["Shuhrat Xolmirzayev", "A-006", "3200000", "05.10.2026", "Kutilmoqda"],
-["Dilshod Nazarov", "A-008", "3800000", "04.10.2026", "Kechikkan"],
-];
-
-const expenses: RecordRow[] = [
-["08.10.2026", "Kommunal to‘lov", "A-001", "1200000"],
-["06.10.2026", "Mayda ta’mirlash", "A-004", "800000"],
-["05.10.2026", "Xodimlar maoshi", "—", "3000000"],
-["03.10.2026", "Tozalash", "A-003", "450000"],
-];
-
-const configs: Record<string, PageConfig> = {
-"Kvartiralar": {
-headers: ["№", "Manzil", "Xona", "Maydon", "Ijara / oy (so‘m)", "Holat"],
-rows: apartments,
-},
-"Ijarachilar": {
-headers: ["F.I.O.", "Telefon", "Kvartira", "Shartnoma", "Holat"],
-rows: tenants,
-},
-"Kvartira egalari": {
-headers: ["F.I.O.", "Telefon", "Kvartiralar", "Daromad (so‘m)", "Holat"],
-rows: owners,
-},
-"Ijara shartnomalari": {
-headers: ["Shartnoma", "Ijarachi", "Kvartira", "Boshlanish", "Tugash", "Holat"],
-rows: contracts,
-},
-"To‘lovlar": {
-headers: ["Ijarachi", "Kvartira", "Summa (so‘m)", "Sana", "Holat"],
-rows: payments,
-},
-"Xarajatlar": {
-headers: ["Sana", "Xarajat turi", "Kvartira", "Summa (so‘m)"],
-rows: expenses,
-},
-};
-
-function formatMoney(value: string): string {
-const number = Number(value.replace(/\s/g, ""));
-if (!Number.isFinite(number) || value.trim() === "") return value;
-return new Intl.NumberFormat("uz-UZ").format(number);
-}
-
-function today(): string {
-return new Intl.DateTimeFormat("uz-UZ").format(new Date());
-}
-
+type Apartment = { id: string; address: string; rooms: string; area: string; rent: number; status: string };
+type Tenant = { id: string; name: string; phone: string };
+type Contract = { id: string; tenantId: string; apartmentId: string; start: string; end: string; rent: number; deposit: number; dueDay: number; status: string; note: string };
+type Payment = { id: string; tenantId: string; date: string; amount: number; method: string; period: string; status: string; note: string };
+type Expense = { id: string; date: string; title: string; amount: number; category: string; note: string };
+type Page = "Dashboard" | "Kvartiralar" | "Ijarachilar" | "Ijara shartnomalari" | "To‘lovlar" | "Xarajatlar";
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const money = (n: number) => new Intl.NumberFormat("uz-UZ").format(n || 0) + " so‘m";
+const initialApartments: Apartment[] = [{id:"A-001",address:"Mening kvartiram",rooms:"2",area:"55",rent:3500000,status:"Ijarada"}];
+const initialTenants: Tenant[] = [];
+const nav: {name:Page;icon:string}[] = [{name:"Dashboard",icon:"▦"},{name:"Kvartiralar",icon:"⌂"},{name:"Ijarachilar",icon:"♙"},{name:"Ijara shartnomalari",icon:"▤"},{name:"To‘lovlar",icon:"↔"},{name:"Xarajatlar",icon:"▣"}];
+function readStore<T,>(key:string, fallback:T):T { if(typeof window === "undefined") return fallback; try { const raw=localStorage.getItem("kvartira-erp-"+key); return raw ? JSON.parse(raw) as T : fallback; } catch { return fallback; } }
 export default function Home() {
-const [page, setPage] = useState("Dashboard");
-const [query, setQuery] = useState("");
-const [notice, setNotice] = useState("");
-const [showForm, setShowForm] = useState(false);
-const [newName, setNewName] = useState("");
-const [newAmount, setNewAmount] = useState("");
-const [extraRows, setExtraRows] = useState<Record<string, RecordRow[]>>({});
-
-const config = configs[page];
-
-const rows = config
-? [...config.rows, ...(extraRows[page] || [])].filter((row) =>
-row.join(" ").toLowerCase().includes(query.toLowerCase())
-)
-: [];
-
-function createRecord() {
-if (!newName.trim()) {
-setNotice("Iltimos, nom yoki F.I.O. kiriting.");
-return;
+ const [page,setPage]=useState<Page>("Dashboard");
+ const [apartments,setApartments]=useState<Apartment[]>(initialApartments);
+ const [tenants,setTenants]=useState<Tenant[]>(initialTenants);
+ const [contracts,setContracts]=useState<Contract[]>([]);
+ const [payments,setPayments]=useState<Payment[]>([]);
+ const [expenses,setExpenses]=useState<Expense[]>([]);
+ const [hydrated,setHydrated]=useState(false);
+ const [query,setQuery]=useState(""); const [notice,setNotice]=useState(""); const [form,setForm]=useState(false);
+ const [name,setName]=useState(""); const [phone,setPhone]=useState(""); const [date,setDate]=useState(today()); const [endDate,setEndDate]=useState(""); const [amount,setAmount]=useState(""); const [address,setAddress]=useState(""); const [apartmentId,setApartmentId]=useState("A-001"); const [tenantId,setTenantId]=useState(""); const [category,setCategory]=useState("Kommunal to‘lov"); const [method,setMethod]=useState("Naqd"); const [period,setPeriod]=useState(today().slice(0,7)); const [deposit,setDeposit]=useState("0"); const [dueDay,setDueDay]=useState("5"); const [note,setNote]=useState(""); const [rooms,setRooms]=useState("2"); const [area,setArea]=useState("55");
+ useEffect(()=>{setApartments(readStore("apartments",initialApartments));setTenants(readStore("tenants",initialTenants));setContracts(readStore("contracts",[]));setPayments(readStore("payments",[]));setExpenses(readStore("expenses",[]));setHydrated(true);},[]);
+ useEffect(()=>{if(!hydrated)return; localStorage.setItem("kvartira-erp-apartments",JSON.stringify(apartments));localStorage.setItem("kvartira-erp-tenants",JSON.stringify(tenants));localStorage.setItem("kvartira-erp-contracts",JSON.stringify(contracts));localStorage.setItem("kvartira-erp-payments",JSON.stringify(payments));localStorage.setItem("kvartira-erp-expenses",JSON.stringify(expenses));},[hydrated,apartments,tenants,contracts,payments,expenses]);
+ const activeContracts=contracts.filter(c=>c.status==="Faol");
+ const tenantOptions=useMemo(()=>tenants.filter(t=>(t.name+" "+t.phone).toLowerCase().includes(name.toLowerCase())),[tenants,name]);
+ const selectedTenant=tenants.find(t=>t.id===tenantId);
+ const income=payments.filter(p=>p.status==="To‘langan").reduce((s,p)=>s+p.amount,0);
+ const expenseTotal=expenses.reduce((s,e)=>s+e.amount,0);
+ const expected=activeContracts.reduce((s,c)=>s+c.rent,0);
+ const filteredTenants=tenants.filter(t=>(t.name+" "+t.phone).toLowerCase().includes(query.toLowerCase()));
+ const resetForm=()=>{setName("");setPhone("");setDate(today());setEndDate("");setAmount("");setAddress("");setTenantId("");setDeposit("0");setDueDay("5");setNote("");setForm(false);};
+ const startForm=()=>{resetForm();setDate(today());setPeriod(today().slice(0,7));setApartmentId(apartments[0]?.id||"");setNotice("");setForm(true);};
+ function save(){
+  const id=()=>`${Date.now()}-${Math.random().toString(36).slice(2,6)}`; const numeric=Number(amount);
+  if(!date){setNotice("Sanani tanlang.");return;}
+  if(page==="Kvartiralar"){if(!address.trim()||numeric<=0){setNotice("Manzil va ijara summasini to‘g‘ri kiriting.");return;}setApartments(p=>[...p,{id:`A-${String(p.length+1).padStart(3,"0")}`,address:address.trim(),rooms,area,rent:numeric,status:"Bo‘sh"}]);}
+  else if(page==="Ijarachilar"){if(!name.trim()||!phone.trim()){setNotice("Ijarachining F.I.O. va telefonini kiriting.");return;}if(tenants.some(t=>t.name.trim().toLocaleLowerCase("uz")==name.trim().toLocaleLowerCase("uz"))){setNotice("Bu ijarachi ro‘yxatda bor.");return;}setTenants(p=>[...p,{id:`T-${String(p.length+1).padStart(3,"0")}`,name:name.trim(),phone:phone.trim()}]);}
+  else if(page==="Ijara shartnomalari"){if(!tenantId||!selectedTenant){setNotice("Faqat ro‘yxatdagi ijarachini tanlang. Yangi ismni avval Ijarachilar bo‘limiga qo‘shing.");return;}if(!apartmentId||!endDate||numeric<=0){setNotice("Kvartira, tugash sanasi va oylik ijara summasini kiriting.");return;}if(endDate<date){setNotice("Shartnoma tugash sanasi boshlanish sanasidan oldin bo‘lishi mumkin emas.");return;}setContracts(p=>[...p,{id:`SH-${String(p.length+1).padStart(3,"0")}`,tenantId,apartmentId,start:date,end:endDate,rent:numeric,deposit:Number(deposit)||0,dueDay:Number(dueDay)||5,status:"Faol",note}]);setApartments(p=>p.map(a=>a.id===apartmentId?{...a,status:"Ijarada"}:a));}
+  else if(page==="To‘lovlar"){if(!tenantId||!selectedTenant){setNotice("Faqat ro‘yxatdagi ijarachini tanlang. Ism topilmasa, avval Ijarachilar bo‘limiga qo‘shing.");return;}if(numeric<=0){setNotice("To‘lov summasi noldan katta bo‘lishi kerak.");return;}setPayments(p=>[...p,{id:`TOL-${String(p.length+1).padStart(3,"0")}`,tenantId,date,amount:numeric,method,period,status:"To‘langan",note}]);}
+  else if(page==="Xarajatlar"){if(!name.trim()||numeric<=0){setNotice("Xarajat nomi va summasini kiriting.");return;}setExpenses(p=>[...p,{id:id(),date,title:name.trim(),amount:numeric,category,note}]);}
+  setNotice("Ma’lumot saqlandi. Ushbu brauzerda avtomatik saqlanadi.");resetForm();
+ }
+ const tenantName=(id:string)=>tenants.find(t=>t.id===id)?.name||"O‘chirilgan ijarachi";
+ const apartmentName=(id:string)=>apartments.find(a=>a.id===id)?.address||id;
+ const fmtDate=(s:string)=>s?new Date(s+"T12:00:00").toLocaleDateString("uz-UZ"):"—";
+ return <div className="min-h-screen bg-slate-100 text-slate-800 md:flex"><aside className="flex w-full flex-col bg-[#111f38] p-4 text-white md:fixed md:inset-y-0 md:w-60"><div className="mb-7 flex items-center gap-3 px-2 py-2 text-lg font-extrabold"><span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600">K</span>KvartiraERP</div><p className="mb-3 px-3 text-xs tracking-widest text-slate-400">IJARA BOSHQARUVI</p><nav className="grid grid-cols-2 gap-1 md:block">{nav.map(item=><button key={item.name} onClick={()=>{setPage(item.name);setQuery("");setNotice("");setForm(false);}} className={`mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition ${page===item.name?"bg-blue-600 text-white":"text-slate-300 hover:bg-white/10"}`}><span className="text-lg">{item.icon}</span>{item.name}</button>)}</nav><div className="mt-auto hidden border-t border-white/10 pt-5 text-xs text-slate-400 md:block">Shaxsiy ijara boshqaruvi · v2.0</div></aside>
+ <main className="min-w-0 flex-1 md:ml-60"><header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-9"><div className="text-sm text-slate-500">Boshqaruv / <strong className="text-slate-800">{page}</strong></div><div className="text-right"><strong className="block text-xs">Mulk egasi · Administrator</strong><small className="text-slate-400">Shaxsiy ijara biznesi</small></div></header><section className="p-4 md:p-8"><div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-2 text-xs font-bold tracking-[.2em] text-blue-600">IJARA BOSHQARUVI</p><h1 className="text-3xl font-extrabold tracking-tight">{page}</h1><p className="mt-2 text-sm text-slate-500">Kvartira, ijarachi, shartnoma va pul oqimini bir joyda boshqaring.</p></div><div className="flex gap-2">{page!=="Dashboard"&&<button onClick={()=>{const data=page==="Kvartiralar"?apartments:page==="Ijarachilar"?tenants:page==="Ijara shartnomalari"?contracts:page==="To‘lovlar"?payments:expenses;const blob=new Blob(["\uFEFF"+JSON.stringify(data,null,2)],{type:"application/json;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`${page}.json`;a.click();URL.revokeObjectURL(a.href);}} className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold">↓ Eksport</button>}{page!=="Dashboard"&&<button onClick={startForm} className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-700">＋ Yangi yozuv</button>}</div></div>
+ {notice&&<div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">{notice}</div>}
+ {form&&<div className="mb-5 rounded-xl border border-blue-100 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><h2 className="font-bold">Yangi yozuv: {page}</h2><span className="text-xs text-slate-400">* Majburiy maydonlar</span></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+ {page==="Kvartiralar"&&<><label className="text-sm">Manzil *<input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Masalan, Yunusobod 12-uy" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Xonalar<input value={rooms} onChange={e=>setRooms(e.target.value)} type="number" min="1" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Maydon (m²)<input value={area} onChange={e=>setArea(e.target.value)} type="number" min="1" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Oylik ijara (so‘m) *<input value={amount} onChange={e=>setAmount(e.target.value)} type="number" min="1" placeholder="3500000" className="mt-1 w-full rounded-lg border p-3"/></label></>}
+ {page==="Ijarachilar"&&<><label className="text-sm">F.I.O. *<input value={name} onChange={e=>setName(e.target.value)} placeholder="To‘liq ism familiya" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Telefon *<input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+998 90 000 00 00" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Ro‘yxatga olingan sana<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label></>}
+ {(page==="To‘lovlar"||page==="Ijara shartnomalari")&&<><label className="text-sm">Ijarachini qidirish va tanlash *<input list="tenant-list" value={name} onChange={e=>{setName(e.target.value);const found=tenants.find(t=>t.name.toLocaleLowerCase("uz")===e.target.value.trim().toLocaleLowerCase("uz"));setTenantId(found?.id||"");}} placeholder="Ismni yozing — tavsiyalar chiqadi" className="mt-1 w-full rounded-lg border p-3"/><datalist id="tenant-list">{tenantOptions.map(t=><option key={t.id} value={t.name}>{t.phone}</option>)}</datalist><small className="text-slate-500">{name&&!tenantId?"Ro‘yxatdan mos ijarachini tanlang; begona ism qabul qilinmaydi.":selectedTenant?`Tanlandi: ${selectedTenant.phone}`:"Ism yozishni boshlang."}</small></label><label className="text-sm">Kvartira *<select value={apartmentId} onChange={e=>setApartmentId(e.target.value)} className="mt-1 w-full rounded-lg border p-3">{apartments.map(a=><option key={a.id} value={a.id}>{a.id} · {a.address}</option>)}</select></label><label className="text-sm">{page==="To‘lovlar"?"To‘lov sanasi *":"Shartnoma boshlanishi *"}<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label>{page==="Ijara shartnomalari"?<><label className="text-sm">Shartnoma tugashi *<input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Oylik ijara summasi *<input type="number" min="1" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="3500000" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Depozit (so‘m)<input type="number" min="0" value={deposit} onChange={e=>setDeposit(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Har oy to‘lov kuni<input type="number" min="1" max="28" value={dueDay} onChange={e=>setDueDay(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label></>:<><label className="text-sm">To‘lov summasi *<input type="number" min="1" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="3500000" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Qaysi oy uchun<input type="month" value={period} onChange={e=>setPeriod(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">To‘lov usuli<select value={method} onChange={e=>setMethod(e.target.value)} className="mt-1 w-full rounded-lg border p-3"><option>Naqd</option><option>Bank o‘tkazmasi</option><option>Click/Payme</option></select></label></>}</>}
+ {page==="Xarajatlar"&&<><label className="text-sm">Xarajat nomi *<input value={name} onChange={e=>setName(e.target.value)} placeholder="Kommunal, ta’mirlash..." className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Summa (so‘m) *<input type="number" min="1" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="500000" className="mt-1 w-full rounded-lg border p-3"/></label><label className="text-sm">Kategoriya<select value={category} onChange={e=>setCategory(e.target.value)} className="mt-1 w-full rounded-lg border p-3"><option>Kommunal to‘lov</option><option>Ta’mirlash</option><option>Soliq</option><option>Jihozlar</option><option>Boshqa</option></select></label><label className="text-sm">Xarajat sanasi *<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-1 w-full rounded-lg border p-3"/></label></>}
+ <label className="text-sm sm:col-span-2">Izoh (ixtiyoriy)<input value={note} onChange={e=>setNote(e.target.value)} placeholder="Qo‘shimcha ma’lumot" className="mt-1 w-full rounded-lg border p-3"/></label></div><div className="mt-4 flex gap-2"><button onClick={save} className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white">Saqlash</button><button onClick={resetForm} className="rounded-lg border px-4 py-2.5 text-sm">Bekor qilish</button></div></div>}
+ {page==="Dashboard"&&<><div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[{title:"Mening kvartiralarim",value:String(apartments.length),sub:`${apartments.filter(a=>a.status==="Bo‘sh").length} ta bo‘sh`,icon:"⌂"},{title:"Faol shartnomalar",value:String(activeContracts.length),sub:"Amaldagi ijaralar",icon:"▤"},{title:"Olingan to‘lovlar",value:money(income),sub:"Kiritilgan to‘langan pullar",icon:"↗"},{title:"Sof pul oqimi",value:money(income-expenseTotal),sub:"Tushum − xarajat",icon:"◎"}].map(c=><div key={c.title} className="rounded-xl border bg-white p-5 shadow-sm"><div className="flex justify-between text-sm text-slate-500">{c.title}<span className="text-xl text-blue-600">{c.icon}</span></div><div className="my-3 text-2xl font-extrabold">{c.value}</div><div className="text-xs text-slate-400">{c.sub}</div></div>)}</div><div className="grid gap-5 xl:grid-cols-2"><div className="rounded-xl border bg-white p-5"><h2 className="mb-4 font-bold">Moliyaviy ko‘rsatkichlar</h2>{[{l:"Shartnomalar bo‘yicha oylik kutilma",v:expected},{l:"Haqiqiy tushum",v:income},{l:"Xarajatlar",v:expenseTotal},{l:"Sof natija",v:income-expenseTotal}].map(x=><div key={x.l} className="flex items-center justify-between border-b py-3 text-sm last:border-0"><span className="text-slate-500">{x.l}</span><b>{money(x.v)}</b></div>)}<p className="mt-3 text-xs text-slate-400">Hisob faqat tizimga kiritilgan ma’lumotlar asosida.</p></div><div className="rounded-xl border bg-white p-5"><h2 className="mb-4 font-bold">Yaqinlashayotgan shartnoma tugashlari</h2>{contracts.filter(c=>c.status==="Faol").sort((a,b)=>a.end.localeCompare(b.end)).slice(0,5).map(c=><div key={c.id} className="flex items-center justify-between border-b py-3 text-sm last:border-0"><div><b>{tenantName(c.tenantId)}</b><p className="text-xs text-slate-500">{apartmentName(c.apartmentId)}</p></div><span className="rounded-full bg-amber-50 px-2 py-1 text-xs text-amber-700">{fmtDate(c.end)}</span></div>)}{!activeContracts.length&&<p className="text-sm text-slate-500">Hali shartnoma yo‘q. “Ijara shartnomalari” bo‘limidan qo‘shing.</p>}</div></div><div className="mt-5 rounded-xl border bg-white p-5"><h2 className="mb-3 font-bold">Tezkor amallar</h2><div className="flex flex-wrap gap-2">{nav.slice(1).map(n=><button key={n.name} onClick={()=>{setPage(n.name);startForm();}} className="rounded-lg border px-4 py-3 text-sm hover:border-blue-300 hover:bg-blue-50">＋ {n.name}</button>)}</div></div></>}
+ {page==="Kvartiralar"&&<Table title="Kvartiralar ro‘yxati" query={query} setQuery={setQuery} headers={["ID","Manzil","Xona","Maydon","Oylik ijara","Holat"]} rows={apartments.filter(a=>(a.address+a.id+a.status).toLowerCase().includes(query.toLowerCase())).map(a=>[a.id,a.address,a.rooms,a.area+" m²",money(a.rent),a.status])}/>}
+ {page==="Ijarachilar"&&<Table title="Ijarachilar ro‘yxati" query={query} setQuery={setQuery} headers={["ID","F.I.O.","Telefon","Faol shartnoma"]} rows={filteredTenants.map(t=>[t.id,t.name,t.phone,contracts.some(c=>c.tenantId===t.id&&c.status==="Faol")?"Ha":"Yo‘q"])}/>}
+ {page==="Ijara shartnomalari"&&<Table title="Shartnomalar · batafsil" query={query} setQuery={setQuery} headers={["Shartnoma","Ijarachi","Kvartira","Boshlanish","Tugash","Ijara/oy","Depozit","To‘lov kuni","Holat"]} rows={contracts.filter(c=>(tenantName(c.tenantId)+apartmentName(c.apartmentId)+c.id).toLowerCase().includes(query.toLowerCase())).map(c=>[c.id,tenantName(c.tenantId),apartmentName(c.apartmentId),fmtDate(c.start),fmtDate(c.end),money(c.rent),money(c.deposit),String(c.dueDay),c.status])}/>}
+ {page==="To‘lovlar"&&<Table title="To‘lovlar tarixi" query={query} setQuery={setQuery} headers={["ID","Ijarachi","Sana","Oy","Summa","Usul","Izoh"]} rows={payments.filter(p=>(tenantName(p.tenantId)+p.id+p.period+p.method).toLowerCase().includes(query.toLowerCase())).map(p=>[p.id,tenantName(p.tenantId),fmtDate(p.date),p.period,money(p.amount),p.method,p.note||"—"])}/>}
+ {page==="Xarajatlar"&&<Table title="Xarajatlar jurnali" query={query} setQuery={setQuery} headers={["Sana","Nomi","Kategoriya","Summa","Izoh"]} rows={expenses.filter(e=>(e.title+e.category+e.note).toLowerCase().includes(query.toLowerCase())).map(e=>[fmtDate(e.date),e.title,e.category,money(e.amount),e.note||"—"])}/>}
+ <footer className="mt-8 flex flex-wrap justify-between gap-2 text-xs text-slate-400"><span>© 2026 KvartiraERP</span><span>Ma’lumotlar ushbu brauzerda saqlanadi — zaxira eksportini oling.</span></footer></section></main></div>;
 }
-
-let record: RecordRow;
-
-if (page === "Kvartiralar") {
-  record = [
-    `A-${String(apartments.length + (extraRows[page]?.length || 1)).padStart(3, "0")}`,
-    newName.trim(),
-    "2",
-    "50 m²",
-    newAmount || "0",
-    "Bo‘sh",
-  ];
-} else if (page === "Ijarachilar") {
-  record = [newName.trim(), newAmount || "—", "—", "—", "Faol"];
-} else if (page === "Kvartira egalari") {
-  record = [newName.trim(), newAmount || "—", "0", "0", "Faol"];
-} else if (page === "To‘lovlar") {
-  record = [newName.trim(), "—", newAmount || "0", today(), "Kutilmoqda"];
-} else if (page === "Xarajatlar") {
-  record = [today(), newName.trim(), "—", newAmount || "0"];
-} else {
-  record = [newName.trim(), newAmount || "—", "—", "—", "Faol"];
-}
-
-setExtraRows((previous) => ({
-  ...previous,
-  [page]: [...(previous[page] || []), record],
-}));
-
-setShowForm(false);
-setNewName("");
-setNewAmount("");
-setNotice("Yozuv qo‘shildi. Bu demo ma’lumoti hozircha vaqtinchalik saqlanadi.");
-
-}
-
-function exportCSV() {
-if (!config) return;
-
-const csvRows = [config.headers, ...rows];
-const csv =
-  "\uFEFF" +
-  csvRows
-    .map((row) =>
-      row
-        .map((cell) => `"${cell.replace(/"/g, '""')}"`)
-        .join(";")
-    )
-    .join("\n");
-
-const url = URL.createObjectURL(
-  new Blob([csv], { type: "text/csv;charset=utf-8;" })
-);
-
-const link = document.createElement("a");
-link.href = url;
-link.download = `${page.toLowerCase().replace(/\s+/g, "-")}.csv`;
-link.click();
-URL.revokeObjectURL(url);
-
-}
-
-const cards = [
-{ title: "Jami kvartiralar", value: "12", subtitle: "2 ta bo‘sh", icon: "⌂", color: "blue" },
-{ title: "Ijarachilar", value: "10", subtitle: "Faol mijozlar", icon: "♙", color: "green" },
-{ title: "Kvartira egalari", value: "5", subtitle: "Mulk egalari", icon: "♧", color: "orange" },
-{ title: "Oylik daromad", value: "12,5 mln", subtitle: "So‘m hisobida", icon: "↗", color: "purple" },
-];
-
-const statusClasses: Record<string, string> = {
-"Bo‘sh": "bg-emerald-50 text-emerald-700",
-"To‘langan": "bg-emerald-50 text-emerald-700",
-"Faol": "bg-emerald-50 text-emerald-700",
-"Ijarada": "bg-blue-50 text-blue-700",
-"Ta’mirda": "bg-amber-50 text-amber-700",
-"Kutilmoqda": "bg-amber-50 text-amber-700",
-"Kechikkan": "bg-red-50 text-red-700",
-};
-
-return ( <div className="min-h-screen bg-slate-100 text-slate-800 md:flex"> <aside className="flex w-full flex-col bg-[#111f38] p-4 text-white md:fixed md:inset-y-0 md:w-60"> <div className="mb-7 flex items-center gap-3 px-2 py-2 text-lg font-extrabold"> <span className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600">K</span>
-KvartiraERP </div>
-
-
-    <p className="mb-3 px-3 text-xs tracking-widest text-slate-400">ASOSIY MENYU</p>
-
-    <nav className="grid grid-cols-2 gap-1 md:block">
-      {menu.map(([name, icon]) => (
-        <button
-          key={name}
-          onClick={() => {
-            setPage(name);
-            setQuery("");
-            setNotice("");
-            setShowForm(false);
-          }}
-          
-className={
-  "mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition " +
-  (page === name
-    ? "bg-blue-600 text-white"
-    : "text-slate-300 hover:bg-white/10")
-}
-        >
-          <span className="text-lg">{icon}</span>
-          {name}
-        </button>
-      ))}
-    </nav>
-
-    <div className="mt-auto hidden border-t border-white/10 pt-5 text-xs text-slate-400 md:block">
-      KvartiraERP · v1.0
-    </div>
-  </aside>
-
-  <main className="min-w-0 flex-1 md:ml-60">
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 md:px-9">
-      <div className="text-sm text-slate-500">
-        Boshqaruv / <strong className="text-slate-800">{page}</strong>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="hidden text-right sm:block">
-          <strong className="block text-xs">Administrator</strong>
-          <small className="text-slate-400">Tizim boshqaruvchisi</small>
-        </span>
-        <div className="grid h-9 w-9 place-items-center rounded-full bg-blue-100 font-bold text-blue-700">
-          FN
-        </div>
-      </div>
-    </header>
-
-    <section className="p-4 md:p-8">
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="mb-2 text-xs font-bold tracking-[.2em] text-blue-600">
-            IJARA BOSHQARUVI
-          </p>
-          <h1 className="text-3xl font-extrabold tracking-tight">{page}</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Kvartira ijarasi biznesingizni yagona tizimda boshqaring.
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          {config && (
-            <button
-              onClick={exportCSV}
-              className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-slate-50"
-            >
-              ↓ Eksport
-            </button>
-          )}
-
-          {page !== "Dashboard" && page !== "Hisobotlar" && (
-            <button
-              onClick={() => {
-                setShowForm(!showForm);
-                setNotice("");
-              }}
-              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-700"
-            >
-              ＋ Yangi yozuv
-            </button>
-          )}
-        </div>
-      </div>
-
-      {notice && (
-        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-          {notice}
-        </div>
-      )}
-
-      {showForm && (
-        <div className="mb-5 rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 font-bold">Yangi yozuv: {page}</h2>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input
-              value={newName}
-              onChange={(event) => setNewName(event.target.value)}
-              placeholder={page === "Kvartiralar" ? "Kvartira manzili" : "F.I.O. yoki nom"}
-              className="rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500"
-            />
-            <input
-              value={newAmount}
-              onChange={(event) => setNewAmount(event.target.value)}
-              placeholder={
-                page === "Ijarachilar" || page === "Kvartira egalari"
-                  ? "Telefon raqami"
-                  : "Summa (so‘m), ixtiyoriy"
-              }
-              className="rounded-lg border border-slate-200 px-3 py-3 text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="mt-4 flex gap-2">
-            <button
-              onClick={createRecord}
-              className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Saqlash
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="rounded-lg border px-4 py-2.5 text-sm"
-            >
-              Bekor qilish
-            </button>
-          </div>
-        </div>
-      )}
-
-      {page === "Dashboard" && (
-        <>
-          <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {cards.map((card) => (
-              <div
-                key={card.title}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="flex items-center justify-between text-sm text-slate-500">
-                  {card.title}
-                  <span
-                    className={`grid h-10 w-10 place-items-center rounded-xl text-xl ${
-                      card.color === "blue"
-                        ? "bg-blue-50 text-blue-600"
-                        : card.color === "green"
-                        ? "bg-emerald-50 text-emerald-600"
-                        : card.color === "orange"
-                        ? "bg-orange-50 text-orange-600"
-                        : "bg-violet-50 text-violet-600"
-                    }`}
-                  >
-                    {card.icon}
-                  </span>
-                </div>
-                <div className="my-3 text-2xl font-extrabold">{card.value}</div>
-                <div className="text-xs text-slate-400">{card.subtitle}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid gap-5 xl:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-bold">Daromad va xarajatlar</h2>
-              <p className="mt-1 text-xs text-slate-400">Namuna grafik</p>
-              <div className="mt-8 flex h-52 items-end justify-around gap-3 border-b border-slate-100 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_49px,#eef2f7_50px)] px-2">
-                {[55, 76, 65, 100, 80, 125, 110, 145].map((height, index) => (
-                  <div key={index} className="flex h-full flex-1 items-end justify-center gap-1">
-                    <div style={{ height: `${height}px` }} className="w-3 rounded-t bg-blue-500 sm:w-5" />
-                    <div style={{ height: `${height * 0.55}px` }} className="w-3 rounded-t bg-orange-400 sm:w-5" />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex gap-5 text-xs text-slate-500">
-                <span>🔵 Daromad</span><span>🟠 Xarajat</span>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-bold">Kvartiralar holati</h2>
-              <p className="mt-1 text-xs text-slate-400">Namunaviy statistika</p>
-              <div className="flex flex-wrap items-center justify-center gap-8 py-8">
-                <div
-                  className="grid h-40 w-40 place-items-center rounded-full"
-                  style={{ background: "conic-gradient(#2563eb 0 67%,#10b981 67% 84%,#f59e0b 84% 100%)" }}
-                >
-                  <div className="grid h-28 w-28 place-content-center rounded-full bg-white text-center">
-                    <b className="text-3xl">12</b>
-                    <span className="text-xs text-slate-400">Jami kvartira</span>
-                  </div>
-                </div>
-                <div className="space-y-4 text-sm">
-                  <p>🔵 Ijarada <b className="ml-5">8</b></p>
-                  <p>🟢 Bo‘sh <b className="ml-8">2</b></p>
-                  <p>🟠 Ta’mirda <b className="ml-3">2</b></p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-bold">Tezkor bo‘limlar</h2>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {menu.slice(1).map(([name, icon]) => (
-                <button
-                  key={name}
-                  onClick={() => setPage(name)}
-                  className="rounded-lg border border-slate-200 p-4 text-left hover:border-blue-300 hover:bg-blue-50"
-                >
-                  <span className="mr-2 text-xl">{icon}</span>
-                  <span className="font-semibold">{name}</span>
-                  <span className="ml-2 text-blue-600">→</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {config && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
-            <h2 className="font-bold">Barcha yozuvlar</h2>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="⌕ Qidirish..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-400 sm:w-64"
-            />
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full whitespace-nowrap text-left text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500">
-                <tr>
-                  {config.headers.map((header) => (
-                    <th key={header} className="px-4 py-3 font-semibold">{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.map((row, index) => (
-                  <tr key={`${page}-${index}`} className="hover:bg-slate-50">
-                    {row.map((cell, columnIndex) => {
-                      const isStatus =
-                        columnIndex === row.length - 1 &&
-                        Object.prototype.hasOwnProperty.call(statusClasses, cell);
-
-                      const isAmount =
-                        (page === "Kvartiralar" && columnIndex === 4) ||
-                        (page === "Kvartira egalari" && columnIndex === 3) ||
-                        (page === "To‘lovlar" && columnIndex === 2) ||
-                        (page === "Xarajatlar" && columnIndex === 3);
-
-                      return (
-                        <td key={columnIndex} className="px-4 py-4 text-slate-600">
-                          {isStatus ? (
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses[cell]}`}>
-                              {cell}
-                            </span>
-                          ) : isAmount ? (
-                            formatMoney(cell)
-                          ) : (
-                            cell
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={config.headers.length} className="p-8 text-center text-slate-400">
-                      Ma’lumot topilmadi.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-400">
-            Jami {rows.length} ta yozuv
-          </div>
-        </div>
-      )}
-
-      {page === "Hisobotlar" && (
-        <div className="grid gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-500">Jami daromad</p>
-            <h2 className="my-3 text-3xl font-extrabold">12 500 000 so‘m</h2>
-            <span className="text-xs text-emerald-600">Namunaviy ijara tushumlari</span>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-500">Jami xarajatlar</p>
-            <h2 className="my-3 text-3xl font-extrabold">4 800 000 so‘m</h2>
-            <span className="text-xs text-orange-600">Namunaviy operatsion xarajatlar</span>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:col-span-2">
-            <p className="text-sm text-slate-500">Hisoblangan sof foyda</p>
-            <h2 className="my-3 text-3xl font-extrabold text-emerald-600">7 700 000 so‘m</h2>
-            <p className="text-xs text-slate-400">
-              Bu qiymatlar demo uchun kiritilgan. Haqiqiy moliyaviy hisob-kitoblar ma’lumotlar bazasi ulangandan keyin amalga oshiriladi.
-            </p>
-          </div>
-        </div>
-      )}
-
-      <footer className="mt-8 flex flex-wrap justify-between gap-2 text-xs text-slate-400">
-        <span>© 2026 KvartiraERP</span>
-        <span>Ijara biznesingiz — yagona tizimda</span>
-      </footer>
-    </section>
-  </main>
-</div>
-
-);
-}
+function Table({title,query,setQuery,headers,rows}:{title:string;query:string;setQuery:(v:string)=>void;headers:string[];rows:string[][]}){return <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3 border-b p-4"><h2 className="font-bold">{title} <span className="ml-1 text-xs font-normal text-slate-400">({rows.length})</span></h2><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="⌕ Qidirish..." className="w-full rounded-lg border px-3 py-2.5 text-sm outline-none focus:border-blue-400 sm:w-64"/></div><div className="overflow-x-auto"><table className="w-full whitespace-nowrap text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{headers.map(h=><th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{rows.map((r,i)=><tr key={i} className="hover:bg-slate-50">{r.map((cell,j)=><td key={j} className="px-4 py-4 text-slate-600">{cell}</td>)}</tr>)}{!rows.length&&<tr><td colSpan={headers.length} className="p-8 text-center text-slate-400">Ma’lumot topilmadi.</td></tr>}</tbody></table></div></div>}
