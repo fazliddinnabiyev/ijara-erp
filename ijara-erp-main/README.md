@@ -1,41 +1,39 @@
-# KvartiraERP — UI prototipi
+# KvartiraERP — shaxsiy ijara boshqaruvi
 
-O‘zbek tilidagi kvartira ijarasini boshqarish ERP tizimi uchun frontend prototip.
+O‘zbek tilidagi Next.js ilovasi. Bir dona o‘z kvartirasini ijaraga beruvchi mulk egasi uchun moslangan.
 
-## Sahifalar
-- Dashboard
-- Kvartiralar
-- Ijarachilar
-- Kvartira egalari
-- Ijara shartnomalari
-- To‘lovlar
-- Xarajatlar
-- Hisobotlar
-- Sozlamalar
+## Asosiy imkoniyatlar
+- Dashboard: kvartira, faol shartnoma, tushum, xarajat va sof pul oqimi ko‘rsatkichlari.
+- Bitta mulk egasi ssenariysi: “Kvartira egalari” bo‘limi yo‘q.
+- Ijarachilarni ro‘yxatga olish va telefon raqamini saqlash.
+- Shartnoma va to‘lov shakllarida ijarachi ismi bo‘yicha tavsiya; faqat ro‘yxatdagi ijarachini tanlaganda saqlash.
+- Sana maydonlari bugungi sana bilan to‘ldiriladi, ammo o‘zgartirish mumkin.
+- Shartnomada boshlanish/tugash sanasi, ijara summasi, depozit va to‘lov kuni.
+- To‘lovlar, xarajatlar, qidiruv va JSON eksport.
+- Dashboard ichida moliyaviy umumlashtirish; alohida “Hisobotlar” menyusi yo‘q.
+
+## Muhim ma’lumot saqlash eslatmasi
+Hozirgi asosiy sahifadagi ma’lumotlar brauzerning `localStorage` xotirasida saqlanadi. Ular shu brauzer/profilga bog‘liq va boshqa qurilmalarga avtomatik sinxronlanmaydi. Real ishlab chiqarish uchun autentifikatsiya, server API va PostgreSQL bazasi bilan ulash zarur. Namuna ijarachilarni o‘zingizning haqiqiy ma’lumotlaringizga almashtiring.
+
+## GitHub va Vercel
+1. ZIP arxivini oching.
+2. Ichidagi `ijara-erp-main` papkasining ichidagi barcha fayl va papkalarni repository ildiziga yuklang (papkaning o‘zini ichma-ich yuklamang).
+3. Repository ildizida `package.json` va `app/page.tsx` turganini tekshiring.
+4. GitHub’da **Commit changes** bosing.
+5. Vercel’da yangi deployment natijasini tekshiring.
 
 ## Ishga tushirish
-1. Repozitoriyani yuklab oling yoki ZIP faylni oching.
-2. `index.html` faylini brauzerda oching.
-3. Sahifalar orasida chap menyu orqali harakatlaning.
+Node.js 20.9+ tavsiya etiladi.
 
-Ishlatish uchun Node.js yoki build jarayoni talab qilinmaydi. Google Fonts internet mavjud bo‘lganda ishlatiladi; shrift yuklanmasa, tizim zaxira shriftlardan foydalanadi.
-
-## Muhim eslatma
-Bu hozircha **frontend demo/prototip**: jadval qidiruvi, status filtri, sahifalar navigatsiyasi va CSV eksport ishlaydi. Ma’lumotlar JavaScript ichidagi namuna ma’lumotlaridir. Hali backend, autentifikatsiya, ma’lumotlar bazasi, haqiqiy CRUD amallari, rollar va xavfsizlik qatlami ulanmagan. Real biznesda ishlatishdan oldin backend va testlar bilan to‘ldirish kerak.
-
-## GitHub'ga yuklash
 ```bash
-git init
-git add .
-git commit -m "Add KvartiraERP UI prototype"
-git branch -M main
-git remote add origin https://github.com/USERNAME/REPOSITORY.git
-git push -u origin main
+npm install
+npm run dev
 ```
-`USERNAME/REPOSITORY` qismini o‘zingizning GitHub manzilingizga almashtiring.
 
-## Fayllar
-- `index.html` — sahifa tuzilmasi
-- `styles.css` — dizayn va responsive ko‘rinish
-- `app.js` — namuna ma’lumotlar, navigatsiya, jadvallar va demo amallar
-- `assets/ui-preview.png` — 8 sahifalik dizayn preview
+Production build:
+
+```bash
+npm run build
+```
+
+Build natijasini tekshirmasdan ishlab chiqarish muhiti uchun kafolat berib bo‘lmaydi.

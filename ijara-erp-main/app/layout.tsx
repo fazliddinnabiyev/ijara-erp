@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ijara ERP",
-  description: "Ijaraga beriladigan obyektlar, mijozlar va to'lovlar hisobi",
+  title: "KvartiraERP — Ijara boshqaruvi",
+  description: "Shaxsiy kvartira ijarasi, shartnomalar, to‘lovlar va xarajatlarni boshqarish tizimi",
 };
 
 export default function RootLayout({
